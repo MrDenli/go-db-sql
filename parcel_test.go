@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -32,9 +33,7 @@ func getTestParcel() Parcel {
 func TestAddGetDelete(t *testing.T) {
 	// prepare
 	db, err := sql.Open("sqlite", "tracker.db") // настройте подключение к БД
-	if err != nil {
-		require.NoError(t, err)
-	}
+	require.NoError(t, err)
 	store := NewParcelStore(db)
 	defer db.Close()
 
@@ -53,7 +52,7 @@ func TestAddGetDelete(t *testing.T) {
 
 	gotParcel, err := store.Get(id)
 	require.NoError(t, err)
-	require.Equal(t, parcel, gotParcel)
+	assert.Equal(t, parcel, gotParcel)
 
 	// delete
 	// удалите добавленную посылку, убедитесь в отсутствии ошибки
@@ -62,6 +61,8 @@ func TestAddGetDelete(t *testing.T) {
 	err = store.Delete(id)
 	require.NoError(t, err)
 
+	_, err = store.Get(id)
+	assert.Error(t, err)
 }
 
 // TestSetAddress проверяет обновление адреса
@@ -93,7 +94,7 @@ func TestSetAddress(t *testing.T) {
 	// получите добавленную посылку и убедитесь, что адрес обновился
 	gotParcel, err := store.Get(id)
 	require.NoError(t, err)
-	require.Equal(t, newAddress, gotParcel.Address)
+	assert.Equal(t, newAddress, gotParcel.Address)
 }
 
 // TestSetStatus проверяет обновление статуса
