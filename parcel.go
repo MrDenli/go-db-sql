@@ -2,7 +2,11 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 )
+
+var ErrParcelNotFound = errors.New("parcel not found")
+var ErrInvalidStatus = errors.New("invalid status")
 
 type ParcelStore struct {
 	db *sql.DB
@@ -37,7 +41,9 @@ func (s ParcelStore) Get(number int) (Parcel, error) {
 	// заполните объект Parcel данными из таблицы
 	p := Parcel{}
 	err := row.Scan(&p.Number, &p.Client, &p.Status, &p.Address, &p.CreatedAt)
-	if err != nil {
+	if err == sql.ErrNoRows {
+		return p, ErrParcelNotFound
+	} else if err != nil {
 		return p, err
 	}
 	return p, nil
@@ -68,6 +74,15 @@ func (s ParcelStore) GetByClient(client int) ([]Parcel, error) {
 
 func (s ParcelStore) SetStatus(number int, status string) error {
 	// реализуйте обновление статуса в таблице parcel
+	validStatuses := map[string]bool{
+		ParcelStatusRegistered: true,
+		ParcelStatusSent:       true,
+		ParcelStatusDelivered:  true,
+	}
+	if !validStatuses[status] {
+		return ErrInvalidStatus
+	}
+
 	_, err := s.db.Exec(`UPDATE parcel SET status = :status WHERE number = :number`,
 		sql.Named("status", status),
 		sql.Named("number", number))
@@ -90,7 +105,7 @@ func (s ParcelStore) SetAddress(number int, address string) error {
 		return err
 	}
 	if rowsAffected == 0 {
-		return err
+		return ErrParcelNotFound
 	}
 
 	return nil
@@ -112,7 +127,7 @@ func (s ParcelStore) Delete(number int) error {
 		return err
 	}
 	if rowsAffected == 0 {
-		return err
+		return ErrParcelNotFound
 	}
 
 	return nil

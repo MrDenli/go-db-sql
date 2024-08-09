@@ -63,6 +63,7 @@ func TestAddGetDelete(t *testing.T) {
 
 	_, err = store.Get(id)
 	assert.Error(t, err)
+	assert.ErrorIs(t, err, ErrParcelNotFound)
 }
 
 // TestSetAddress проверяет обновление адреса
@@ -95,6 +96,13 @@ func TestSetAddress(t *testing.T) {
 	gotParcel, err := store.Get(id)
 	require.NoError(t, err)
 	assert.Equal(t, newAddress, gotParcel.Address)
+
+	err = store.Delete(id)
+	require.NoError(t, err)
+
+	err = store.SetAddress(id, "invalid address")
+	assert.Error(t, err)
+	assert.ErrorIs(t, err, ErrParcelNotFound)
 }
 
 // TestSetStatus проверяет обновление статуса
@@ -129,6 +137,10 @@ func TestSetStatus(t *testing.T) {
 	gotParcel, err := store.Get(id)
 	require.NoError(t, err)
 	require.Equal(t, newStatus, gotParcel.Status)
+
+	err = store.SetStatus(id, "invalid status")
+	assert.Error(t, err)
+	assert.ErrorIs(t, err, ErrInvalidStatus)
 }
 
 // TestGetByClient проверяет получение посылок по идентификатору клиента
@@ -181,6 +193,6 @@ func TestGetByClient(t *testing.T) {
 		// убедитесь, что значения полей полученных посылок заполнены верно
 		expected, exists := parcelMap[p.Number]
 		require.True(t, exists)
-		require.Equal(t, expected, p)
+		assert.Equal(t, expected, p)
 	}
 }
